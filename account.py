@@ -116,39 +116,27 @@ def delete_record(rec_id):
     else:
         print("错误：记录不存在")
 
-
-# 按日期范围查询收支记录
-def query_by_date(start_date, end_date):
+# 按多条件查询收支记录
+def query_records(start_date=None, end_date=None, type_str=None, category=None):
     res = []
     for r in records:
-        if r["date"] >= start_date and r["date"] <= end_date:
-            res.append(r)
-    if len(res) == 0:
-        print("未找到符合条件的记录")
-    else:
-        for r in res:
-            print(r)
-    return res
+        is_match = True 
 
-# 按类型查询收支记录
-def query_by_type(type_str):
-    res = []
-    for r in records:
-        if r["type"] == type_str:
+        if start_date != None and end_date != None:
+            if r["date"] < start_date or r["date"] > end_date:
+                is_match = False
+        
+        if type_str != None:
+            if r["type"] != type_str:
+                is_match = False
+                
+        if category != None:
+            if r["category"] != category:
+                is_match = False
+        
+        if is_match:
             res.append(r)
-    if len(res) == 0:
-        print("未找到符合条件的记录")
-    else:
-        for r in res:
-            print(r)
-    return res
-
-# 按分类查询收支记录
-def query_by_category(category):
-    res = []
-    for r in records:
-        if r["category"] == category:
-            res.append(r)
+            
     if len(res) == 0:
         print("未找到符合条件的记录")
     else:
@@ -261,13 +249,13 @@ def main():
         elif choice == "4":
             start = input("请输入开始日期：")
             end = input("请输入结束日期：")
-            query_by_date(start, end)
+            query_records(start_date=start, end_date=end)
         elif choice == "5":
             t = input("请输入类型(income/expense)：")
-            query_by_type(t)
+            query_records(type_str=t)
         elif choice == "6":
             c = input("请输入分类：")
-            query_by_category(c)
+            query_records(category=c)
         elif choice == "7":
             month = input("请输入月份(YYYY-MM)：")
             get_monthly_stats(month)
