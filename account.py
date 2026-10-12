@@ -8,12 +8,6 @@ bal = 0.0
 bdg = 1000.0
 data_file = "account_data.json"
 
-# 计算收支列表总金额
-def calc_total_amt(rec_list):
-    total = 0
-    for r in rec_list:
-        total += r["amount"]
-    return total
 
 # 新增一条收支记录，更新余额，并检查月度预算
 def add_record(date_str, type_str, amt, category, remark):
