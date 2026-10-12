@@ -3,44 +3,44 @@ import datetime
 import os
 
 
-recs = []
-bal = 0.0
-bdg = 1000.0
+records = []
+balance = 0.0
+budget = 1000.0
 data_file = "account_data.json"
 
 
 # 新增一条收支记录，更新余额，并检查月度预算
-def add_record(date_str, type_str, amt, category, remark):
-    global bal, recs
-    if amt > 0:
+def add_record(date_str, type_str, amount, category, remark):
+    global balance, records
+    if amount > 0:
         try:
             datetime.datetime.strptime(date_str, "%Y-%m-%d")
             valid_cats = ["餐饮", "交通", "购物", "工资", "奖金", "其他"]
             if category in valid_cats:
                 if type_str in ["income", "expense"]:
-                    if len(recs) == 0:
+                    if len(records) == 0:
                         new_id = 1
                     else:
-                        new_id = max(r["id"] for r in recs) + 1
+                        new_id = max(r["id"] for r in records) + 1
                     if type_str == "income":
-                        bal += amt
+                        balance += amount
                     else:
-                        bal -= amt
+                        balance -= amount
                         month = date_str[:7]
-                        month_exp = sum(r["amount"] for r in recs if r["type"] == "expense" and r["date"].startswith(month))
-                        if month_exp + amt > bdg:
+                        month_exp = sum(r["amount"] for r in records if r["type"] == "expense" and r["date"].startswith(month))
+                        if month_exp + amount > budget:
                             print("警告：本月支出已超预算！")
-                        elif month_exp + amt > bdg * 0.8:
+                        elif month_exp + amount > budget * 0.8:
                             print("提醒：本月支出已达预算80%")
                     rec = {
                         "id": new_id,
                         "date": date_str,
                         "type": type_str,
-                        "amount": amt,
+                        "amount": amount,
                         "category": category,
                         "remark": remark
                     }
-                    recs.append(rec)
+                    records.append(rec)
                     save_data()
                     print(f"记录添加成功，ID：{new_id}")
                 else:
@@ -54,31 +54,31 @@ def add_record(date_str, type_str, amt, category, remark):
 
 
 # 修改单条收支记录，自动重新计算结余并触发预算校验与预警
-def update_record(rec_id, date_str, type_str, amt, category, remark):
-    global bal, recs
-    if amt > 0:
+def update_record(rec_id, date_str, type_str, amount, category, remark):
+    global balance, records
+    if amount > 0:
         try:
             datetime.datetime.strptime(date_str, "%Y-%m-%d")
             valid_cats = ["餐饮", "交通", "购物", "工资", "奖金", "其他"]
             if category in valid_cats:
                 if type_str in ["income", "expense"]:
                     target = None
-                    for r in recs:
+                    for r in records:
                         if r["id"] == rec_id:
                             target = r
                             break
                     if target:
                         if target["type"] == "income":
-                            bal -= target["amount"]
+                            balance -= target["amount"]
                         else:
-                            bal += target["amount"]
+                            balance += target["amount"]
                         if type_str == "income":
-                            bal += amt
+                            balance += amount
                         else:
-                            bal -= amt
+                            balance -= amount
                         target["date"] = date_str
                         target["type"] = type_str
-                        target["amount"] = amt
+                        target["amount"] = amount
                         target["category"] = category
                         target["remark"] = remark
                         save_data()
@@ -96,21 +96,21 @@ def update_record(rec_id, date_str, type_str, amt, category, remark):
 
 # 删除单条收支记录，并自动更新结余
 def delete_record(rec_id):
-    global recs, bal
-    if len(recs) == 0:
+    global records, balance
+    if len(records) == 0:
         print("错误：暂无记录")
         return
     target = None
-    for r in recs:
+    for r in records:
         if r["id"] == rec_id:
             target = r
             break
     if target:
         if target["type"] == "income":
-            bal -= target["amount"]
+            balance -= target["amount"]
         else:
-            bal += target["amount"]
-        recs.remove(target)
+            balance += target["amount"]
+        records.remove(target)
         save_data()
         print(f"记录ID {rec_id} 删除成功")
     else:
@@ -120,7 +120,7 @@ def delete_record(rec_id):
 # 按日期范围查询收支记录
 def query_by_date(start_date, end_date):
     res = []
-    for r in recs:
+    for r in records:
         if r["date"] >= start_date and r["date"] <= end_date:
             res.append(r)
     if len(res) == 0:
@@ -133,7 +133,7 @@ def query_by_date(start_date, end_date):
 # 按类型查询收支记录
 def query_by_type(type_str):
     res = []
-    for r in recs:
+    for r in records:
         if r["type"] == type_str:
             res.append(r)
     if len(res) == 0:
@@ -146,7 +146,7 @@ def query_by_type(type_str):
 # 按分类查询收支记录
 def query_by_category(category):
     res = []
-    for r in recs:
+    for r in records:
         if r["category"] == category:
             res.append(r)
     if len(res) == 0:
@@ -158,13 +158,13 @@ def query_by_category(category):
 
 # 获取月度统计信息
 def get_monthly_stats(month_str):
-    if len(recs) == 0:
+    if len(records) == 0:
         print("暂无记录")
         return
     income_total = 0.0
     expense_total = 0.0
     cat_stats = {}
-    for r in recs:
+    for r in records:
         if r["date"].startswith(month_str):
             if r["type"] == "income":
                 income_total += r["amount"]
@@ -179,49 +179,49 @@ def get_monthly_stats(month_str):
     print(f"总收入：{income_total:.2f} 元")
     print(f"总支出：{expense_total:.2f} 元")
     print(f"净结余：{net:.2f} 元")
-    print(f"当前预算：{bdg:.2f} 元")
-    if expense_total > bdg:
+    print(f"当前预算：{budget:.2f} 元")
+    if expense_total > budget:
         print("状态：超预算")
     else:
         print("状态：预算内")
     print("支出分类占比：")
-    for cat, amt in cat_stats.items():
-        ratio = amt / expense_total * 100
-        print(f"  {cat}: {amt:.2f} 元 ({ratio:.1f}%)")
+    for cat, amount in cat_stats.items():
+        ratio = amount / expense_total * 100
+        print(f"  {cat}: {amount:.2f} 元 ({ratio:.1f}%)")
     return income_total, expense_total, net
 
 # 设置月度预算
-def set_budget(new_bdg):
-    global bdg
-    if new_bdg > 0:
-        bdg = new_bdg
-        print(f"预算已设置为：{bdg:.2f} 元")
+def set_budget(new_budget):
+    global budget
+    if new_budget > 0:
+        budget = new_budget
+        print(f"预算已设置为：{budget:.2f} 元")
     else:
         print("错误：预算必须大于0")
 
 # 保存数据
 def save_data():
     data = {
-        "records": recs,
-        "balance": bal,
-        "budget": bdg
+        "records": records,
+        "balance": balance,
+        "budget": budget
     }
     with open(data_file, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 # 加载数据
 def load_data():
-    global recs, bal, bdg
+    global records, balance, budget
     if os.path.exists(data_file):
         with open(data_file, "r", encoding="utf-8") as f:
             data = json.load(f)
-            recs = data.get("records", [])
-            bal = data.get("balance", 0.0)
-            bdg = data.get("budget", 1000.0)
+            records = data.get("records", [])
+            balance = data.get("balance", 0.0)
+            budget = data.get("budget", 1000.0)
     else:
-        recs = []
-        bal = 0.0
-        bdg = 1000.0
+        records = []
+        balance = 0.0
+        budget = 1000.0
 
 
 def main():
@@ -243,10 +243,10 @@ def main():
         if choice == "1":
             date = input("请输入日期(YYYY-MM-DD)：")
             type_str = input("请输入类型(income/expense)：")
-            amt = float(input("请输入金额："))
+            amount = float(input("请输入金额："))
             category = input("请输入分类：")
             remark = input("请输入备注：")
-            add_record(date, type_str, amt, category, remark)
+            add_record(date, type_str, amount, category, remark)
         elif choice == "2":
             rec_id = int(input("请输入要删除的记录ID："))
             delete_record(rec_id)
@@ -254,10 +254,10 @@ def main():
             rec_id = int(input("请输入要修改的记录ID："))
             date = input("请输入日期(YYYY-MM-DD)：")
             type_str = input("请输入类型(income/expense)：")
-            amt = float(input("请输入金额："))
+            amount = float(input("请输入金额："))
             category = input("请输入分类：")
             remark = input("请输入备注：")
-            update_record(rec_id, date, type_str, amt, category, remark)
+            update_record(rec_id, date, type_str, amount, category, remark)
         elif choice == "4":
             start = input("请输入开始日期：")
             end = input("请输入结束日期：")
@@ -275,7 +275,7 @@ def main():
             b = float(input("请输入新预算："))
             set_budget(b)
         elif choice == "9":
-            print(f"当前结余：{bal:.2f} 元")
+            print(f"当前结余：{balance:.2f} 元")
         elif choice == "0":
             save_data()
             print("已保存数据，退出系统")
